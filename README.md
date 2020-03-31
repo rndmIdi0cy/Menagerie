@@ -4,7 +4,7 @@ A CrowdStrike Response script for doing simple intial triage and data collection
 
 Create a new script via Configuration -> Response Scripts & Files and name it Menagerie
 
-```powershell
+```
 Usage:
       -module all           : run all modules
       -module <name>        : run specific module
