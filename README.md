@@ -1,2 +1,29 @@
 # Menagerie
-Crowdstrike response script containing various functions for IR/triage
+
+A CrowdStrike Response script for doing simple intial triage and data collection from a system (autorun information, installedsoftware, files and hashes, etc..)
+
+Create a new script via Configuration -> Response Scripts & Files and name it Menagerie
+
+```powershell
+Usage:
+      -module all           : run all modules
+      -module <name>        : run specific module
+      -folder <path>        : output folder [Default: C:\Windows\Temp]
+      -module help          : display usage
+
+    Modules:
+      AutoRuns              : Gather files in common startup locations
+      Services              : Gather Windows Services
+      InstalledSoftware     : Gather Installed Software from Uninstall Key
+      DNSCache              : Get clients local DNS cache
+      RunningProcesses      : Get all running processes and hashes
+      Prefetch              : Get list of files in prefetch
+      PEFiles               : Get list of PE files and hashes in user writeable locations
+      OfficeFiles           : Get list of office docs and hashes in user writeable locations
+      ScriptFiles           : Get list of scripts and hashes in user writeable locations
+
+    Examples:
+      runscript -CloudFile="Menagerie" -CommandLine="-module all"
+      runscript -CloudFile="Menagerie" -CommandLine="-module Services"
+```
+
