@@ -30,6 +30,8 @@ function usage {
       EventLogs             : Gather Event Logs
       RecentFiles           : Get history of recent files
       LNKFiles              : Get LNK files on desktop and recent files list
+      HiddenFilesDirs       : Get hidden files and directories
+      WindowsUpdates        : Get installed windows updates
 
     Examples:
       runscript -CloudFile='Menagerie' -CommandLine='-module all'
@@ -261,6 +263,25 @@ function Get-LnkFiles {
     }
 }
 
+function Get-Hidden {
+    Write-Output "[+] Gathering hidden files and directories ..."
+    $outputFile = Join-Path $irPath "\${ComputerName}_HiddenFilesDirs.csv"
+
+    Get-ChildItem C:\ -Recurse -Hidden -ErrorAction SilentlyContinue | Export-Csv -Path $outputFile -NoTypeInformation
+    Write-Output "[ done ]"
+}
+
+
+function Get-InstalledWindowsUpdates {
+    Write-Output "[+] Gathering installed Windows Updates and Hotfixes ..."
+    $outputFileHotFixes = Join-Path $irPath "\${ComputerName}_WinHotfixes.csv"
+    $outputFileWinUpdates = Join-Path $irPath "\${ComputerName}_WinUpdates.csv"
+
+    Get-HotFix | Select-Object InstalledOn, InstalledBy, HotFixID, Description | Export-Csv -NoTypeInformation -Path $outputFileHotFixes
+    $session = New-Object -ComObject Microsoft.Update.Session
+    $searcher = $session.CreateUpdateSearcher()
+    $searcher.Search("IsInstalled=1").Updates | Select-Object Title | Export-Csv -NoTypeInformation -Path $outputFileWinUpdates
+}
 
 function Invoke-AllIRModules {
     Write-Output "[+] Running all IR modules ..."
@@ -276,6 +297,8 @@ function Invoke-AllIRModules {
     Get-EventLogs
     Get-RecentFiles
     Get-LnkFiles
+    Get-Hidden
+    Get-InstalledWindowsUpdates
 }
 
 if ($module) {
@@ -303,6 +326,8 @@ if ($module) {
         eventlogs { Get-EventLogs }
         recentfiles { Get-RecentFiles }
         lnkfiles { Get-LnkFiles }
+        hiddenfiles { Get-Hidden }
+        windowsupdates { Get-InstalledWindowsUpdates }
         help { usage }
         default { usage }
     }
