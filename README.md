@@ -24,6 +24,8 @@ Modules:
   EventLogs             : Gather Event Logs
   RecentFiles           : Get history of recent files
   LNKFiles              : Get LNK files on desktop and recent files list
+  HiddenFilesDirs       : Get hidden files and directories
+  WindowsUpdates        : Get installed windows updates
 
 Examples:
   runscript -CloudFile='Menagerie' -CommandLine='-module all'
