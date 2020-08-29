@@ -32,6 +32,8 @@ function usage {
       LNKFiles              : Get LNK files on desktop and recent files list
       HiddenFilesDirs       : Get hidden files and directories
       WindowsUpdates        : Get installed windows updates
+      BrowserExtensions     : Get list of extensions for Chrome and Firefox
+      KrbSessions           : Get list of kerberos sessions
 
     Examples:
       runscript -CloudFile='Menagerie' -CommandLine='-module all'
@@ -283,6 +285,102 @@ function Get-InstalledWindowsUpdates {
     $searcher.Search("IsInstalled=1").Updates | Select-Object Title | Export-Csv -NoTypeInformation -Path $outputFileWinUpdates
 }
 
+function Get-BrowserExtensions {
+    Write-Output "[+] Gathering browser extensions for all users and major browsers ..."
+    $outputFile = Join-Path $irPath "\${ComputerName}_BrowserExtensions.csv"
+    $chromePath = "C:\Users\*\AppData\Local\Google\Chrome\User Data\Default\Extensions"
+    $firefoxPath = "C:\Users\*\AppData\Roaming\Mozilla\Firefox\Profiles"
+
+    $extArray = @()
+
+    # Chrome
+    $chromeManifests = Get-ChildItem -Path $chromePath -Include manifest.json -Recurse -ErrorAction SilentlyContinue
+
+    foreach ($manifest in $chromeManifests) {
+        $info = Get-Content -Path $manifest.FullName -Raw | ConvertFrom-Json
+        $manifest.FullName -match 'users\\(.*?)\\appdata' | Out-Null
+
+        if ($matches) {
+            $username = $matches[1]
+        }
+        else {
+            $username = "N/A"
+        }
+
+        $extObject = New-Object -TypeName psobject
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name Application -Value "Google Chrome"
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name Username -Value $username
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name ExtensionName -Value $info.name
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name Description -Value ($info.description -replace "`n", " ")
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name Version -Value $info.version
+        Add-Member -InputObject $extObject -MemberType NoteProperty -Name Path -Value $manifest.FullName
+
+        $extArray += $extObject
+    }
+
+    # Firefox
+    $firefoxProfiles = Get-ChildItem -Path $firefoxPath -Include addons.json -Recurse -ErrorAction SilentlyContinue
+
+    foreach ($profile in $firefoxProfiles) {
+        $info = Get-Content -Path $profile.FullName -Raw | ConvertFrom-Json
+        $profile.FullName -match 'users\\(.*?)\\appdata' | Out-Null
+
+        if ($matches) {
+            $username = $matches[1]
+        }
+        else {
+            $username = "N/A"
+        }
+
+        foreach ($addon in $info.addons) {
+            $extObject = New-Object -TypeName psobject
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name Application -Value "Firefox"
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name Username -Value $username
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name ExtensionName -Value $addon.name
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name Description -Value ($addon.description -replace "`n", " ")
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name Version -Value $addon.version
+            Add-Member -InputObject $extObject -MemberType NoteProperty -Name Path -Value $profile.FullName
+
+            $extArray += $extObject
+        }
+    }
+
+    $extArray | Export-Csv -Path $outputFile -NoTypeInformation
+    Write-Output "[ done ]"
+}
+
+function Get-KrbSessions {
+    Write-Output "[+] Gathering klist sessions ..."
+    $outputFile = Join-Path $irPath "\${ComputerName}_klistsessions.csv"
+
+    $sessions = klist sessions
+    $klistArray = @()
+
+    foreach ($session in $sessions) {
+        $listNumber = ($session.split(' ')[0] -replace "`n", "")
+        $sessionNumber = ($session.split(' ')[2] -replace "`n", "")
+        $logonId = ($session.split(' ')[3] -replace "0:", "" -replace "`n", "")
+        $identity = ($session.split(' ')[4] -replace "`n", "")
+        $authType = ($session.split(' ')[5] -replace "`n", "")
+
+        $klistObject = New-Object -TypeName psobject
+        Add-Member -InputObject $klistObject -MemberType NoteProperty -Name ListNumber -Value $listNumber
+        Add-Member -InputObject $klistObject -MemberType NoteProperty -Name SessionNumber -Value $sessionNumber
+        Add-Member -InputObject $klistObject -MemberType NoteProperty -Name LogonId -Value $logonId
+        Add-Member -InputObject $klistObject -MemberType NoteProperty -Name Identity -Value $identity
+        Add-Member -InputObject $klistObject -MemberType NoteProperty -Name AuthType -Value $authType
+
+        $klistArray += $klistObject
+    }
+
+    $klistArray | Export-Csv -Path $outputFile -NoTypeInformation
+    Write-Output "[ done ]"
+    Write-Output "[*] Session List"
+    $sessions
+    Write-Output ""
+    Write-Output "To view further details run: klist -li [logon_id]"
+}
+
 function Invoke-AllIRModules {
     Write-Output "[+] Running all IR modules ..."
     Get-AutoRuns
@@ -299,6 +397,8 @@ function Invoke-AllIRModules {
     Get-LnkFiles
     Get-Hidden
     Get-InstalledWindowsUpdates
+    Get-BrowserExtensions
+    Get-KrbSessions
 }
 
 if ($module) {
@@ -328,6 +428,8 @@ if ($module) {
         lnkfiles { Get-LnkFiles }
         hiddenfiles { Get-Hidden }
         windowsupdates { Get-InstalledWindowsUpdates }
+        browserextensions { Get-BrowserExtensions }
+        krbsessions { Get-KrbSessions }
         help { usage }
         default { usage }
     }
