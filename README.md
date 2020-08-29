@@ -26,6 +26,8 @@ Modules:
   LNKFiles              : Get LNK files on desktop and recent files list
   HiddenFilesDirs       : Get hidden files and directories
   WindowsUpdates        : Get installed windows updates
+  BrowserExtensions     : Get list of extensions for Chrome and Firefox
+  KrbSessions           : Get list of kerberos sessions
 
 Examples:
   runscript -CloudFile='Menagerie' -CommandLine='-module all'
